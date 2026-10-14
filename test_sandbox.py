@@ -1,30 +1,22 @@
-
 from sandbox import run_tests
 
-# 1. Test with buggy source code + failing import test
-source_buggy = """
-def calculate_average(numbers):
-    return sum(numbers) / len(numbers)
-"""
+# 1. Test Buggy Code
+files_buggy = {
+    "calculator.py": "def calculate_average(numbers):\n    return sum(numbers) / len(numbers)",
+    "test_calculator.py": "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
+}
+print("BUGGY CODE RESULT:", run_tests(files_buggy))
 
-test_code = """
-from calculator import calculate_average
+# 2. Test Infinite Loop (Should return INCONCLUSIVE via timeout)
+files_infinite = {
+    "calculator.py": "def calculate_average(numbers):\n    while True: pass\n    return 0",
+    "test_calculator.py": "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
+}
+print("INFINITE LOOP RESULT:", run_tests(files_infinite, timeout=2))
 
-def test_empty():
-    assert calculate_average([]) == 0
-"""
-
-print("--- TESTING BUGGY CODE ---")
-print(run_tests(source_buggy, test_code))
-
-# 2. Test with fixed source code
-source_fixed = """
-def calculate_average(numbers):
-    if not numbers:
-        return 0
-    return sum(numbers) / len(numbers)
-"""
-
-print("\n--- TESTING FIXED CODE ---")
-print(run_tests(source_fixed, test_code))
-
+# 3. Test Syntax Error (Should return INCONCLUSIVE)
+files_syntax = {
+    "calculator.py": "def calculate_average(numbers)\n    return 0", # Missing colon
+    "test_calculator.py": "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
+}
+print("SYNTAX ERROR RESULT:", run_tests(files_syntax))
