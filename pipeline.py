@@ -9,7 +9,7 @@ def run_pipeline(
     filename: str = "calculator.py"
 ) -> dict:
     """
-    Orchestrates the full BugTrace verification pipeline:
+    Orchestrates the full BugTrace verification pipeline with stage tracking:
     1. Baseline Check: Verifies the reproduction test FAILS on original buggy code (Red).
     2. Patch Check: Verifies the reproduction test PASSES on patched code (Green).
     3. Regression Check: Verifies all existing regression tests still pass.
@@ -25,13 +25,15 @@ def run_pipeline(
     if baseline_result["status"] == "PASSED":
         return {
             "status": "INCONCLUSIVE",
+            "stage": "baseline",
             "message": "Baseline test already passed on original code. The bug might not exist or the test is invalid.",
             "details": baseline_result
         }
     elif baseline_result["status"] == "INCONCLUSIVE":
         return {
             "status": "INCONCLUSIVE",
-            "message": "Baseline test execution resulted in a syntax error or timeout.",
+            "stage": "baseline",
+            "message": "Baseline test execution resulted in a syntax error, import crash, or timeout.",
             "details": baseline_result
         }
 
@@ -45,11 +47,13 @@ def run_pipeline(
     if repro_result["status"] != "PASSED":
         return {
             "status": "FAILED",
+            "stage": "reproduction",
             "message": "Patch failed to make the reproduction test pass (still RED).",
             "details": repro_result
         }
 
     # Stage 3: Run regression tests if provided
+    regression_result = None
     if regression_tests:
         print("[Pipeline] Stage 3: Running regression test suite...")
         regression_result = run_tests({
@@ -60,16 +64,19 @@ def run_pipeline(
         if regression_result["status"] != "PASSED":
             return {
                 "status": "FAILED",
+                "stage": "regression",
                 "message": "Patch passed the reproduction test but broke regression tests.",
                 "details": regression_result
             }
 
     return {
         "status": "VERIFIED",
-        "message": "Patch successfully verified (Baseline failed -> Patch passed -> Regressions passed).",
+        "stage": "regression" if regression_tests else "reproduction",
+        "message": "Patch successfully verified across all stages.",
         "details": {
             "baseline": baseline_result,
-            "reproduction": repro_result
+            "reproduction": repro_result,
+            "regression": regression_result
         }
     }
 
