@@ -6,6 +6,7 @@ To take a buggy Python function and a failing test, automatically generate a fix
 ## Inputs
 1. **Source Code**: A Python file containing the buggy function.
 2. **Reproduction Test**: A pytest file that currently fails because of the bug.
+3. **Regression Tests (Optional)**: Existing test suites to ensure the fix introduces no regressions.
 
 ## Outputs
 BugTrace must output exactly one of three status results:
