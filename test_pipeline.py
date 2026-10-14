@@ -41,3 +41,13 @@ def calculate_average(numbers):
 print("\n--- 2. TESTING CHEATING PATCH (Regression failure) ---")
 print(run_pipeline(buggy_code, cheat_patch, repro_test, regression_tests))
 
+# 3. Test Inconclusive Baseline (Test that passes on buggy code -> returns INCONCLUSIVE)
+bad_repro_test = """
+from calculator import calculate_average
+
+def test_something():
+    assert calculate_average([10, 20]) == 15
+"""
+print("\n--- 3. TESTING INCONCLUSIVE BASELINE ---")
+print(run_pipeline(buggy_code, good_patch, bad_repro_test, regression_tests))
+
