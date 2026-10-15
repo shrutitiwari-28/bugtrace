@@ -8,15 +8,6 @@ def run_pipeline(
     regression_tests: str = "", 
     filename: str = "calculator.py"
 ) -> dict:
-    """
-    Orchestrates the full BugTrace verification pipeline with stage tracking:
-    1. Baseline Check: Verifies the reproduction test FAILS on original buggy code (Red).
-    2. Patch Check: Verifies the reproduction test PASSES on patched code (Green).
-    3. Regression Check: Verifies all existing regression tests still pass.
-    """
-    
-    # Stage 1: Confirm reproduction test fails on original code (Baseline Red)
-    print("[Pipeline] Stage 1: Verifying baseline failure on original code...")
     baseline_result = run_tests({
         filename: original_source,
         "test_calculator.py": reproduction_test
@@ -26,19 +17,17 @@ def run_pipeline(
         return {
             "status": "INCONCLUSIVE",
             "stage": "baseline",
-            "message": "Baseline test already passed on original code. The bug might not exist or the test is invalid.",
+            "message": "Baseline test already passed on original code.",
             "details": baseline_result
         }
     elif baseline_result["status"] == "INCONCLUSIVE":
         return {
             "status": "INCONCLUSIVE",
             "stage": "baseline",
-            "message": "Baseline test execution resulted in a syntax error, import crash, or timeout.",
+            "message": "Baseline test execution resulted in syntax error or timeout.",
             "details": baseline_result
         }
 
-    # Stage 2: Run reproduction test on patched code
-    print("[Pipeline] Stage 2: Running reproduction test on patched code...")
     repro_result = run_tests({
         filename: patched_source,
         "test_calculator.py": reproduction_test
@@ -46,16 +35,14 @@ def run_pipeline(
     
     if repro_result["status"] != "PASSED":
         return {
-            "status": "FAILED",
+            "status": "FAILED" if repro_result["status"] == "FAILED" else "INCONCLUSIVE",
             "stage": "reproduction",
-            "message": "Patch failed to make the reproduction test pass (still RED).",
+            "message": "Patch failed to make the reproduction test pass." if repro_result["status"] == "FAILED" else "Reproduction run could not complete.",
             "details": repro_result
         }
 
-    # Stage 3: Run regression tests if provided
     regression_result = None
     if regression_tests:
-        print("[Pipeline] Stage 3: Running regression test suite...")
         regression_result = run_tests({
             filename: patched_source,
             "test_regression.py": regression_tests
@@ -63,9 +50,9 @@ def run_pipeline(
         
         if regression_result["status"] != "PASSED":
             return {
-                "status": "FAILED",
+                "status": "FAILED" if regression_result["status"] == "FAILED" else "INCONCLUSIVE",
                 "stage": "regression",
-                "message": "Patch passed the reproduction test but broke regression tests.",
+                "message": "Patch broke regression tests." if regression_result["status"] == "FAILED" else "Regression run could not complete.",
                 "details": regression_result
             }
 
