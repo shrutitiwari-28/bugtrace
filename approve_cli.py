@@ -12,7 +12,7 @@ SOURCE = """def calculate_average(numbers):
 ERROR_OUTPUT = "ZeroDivisionError: division by zero for an empty list"
 
 EXPECTED_BEHAVIOR = (
-    "calculate_average should return 0 when given an empty list. "
+    "calculate_average should return None when given an empty list. "
     "For non-empty lists, it should return the arithmetic average."
 )
 
