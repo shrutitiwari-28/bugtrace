@@ -1,27 +1,120 @@
+
 from pipeline import run_pipeline
 
-buggy_code = "def calculate_average(numbers):\n    return sum(numbers) / len(numbers)"
-repro_test = "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
-regression_tests = "from calculator import calculate_average\ndef test_normal():\n    assert calculate_average([2, 4, 6]) == 4"
 
-good_patch = "def calculate_average(numbers):\n    if not numbers:\n        return 0\n    return sum(numbers) / len(numbers)"
-res1 = run_pipeline(buggy_code, good_patch, repro_test, regression_tests)
-assert res1["status"] == "VERIFIED", f"Expected VERIFIED, got {res1}"
-print("TEST 1 PASSED")
+BUGGY_CODE = """def calculate_average(numbers):
+    return sum(numbers) / len(numbers)
+"""
 
-cheat_patch = "def calculate_average(numbers):\n    return 0"
-res2 = run_pipeline(buggy_code, cheat_patch, repro_test, regression_tests)
-assert res2["status"] == "FAILED" and res2["stage"] == "regression", f"Got {res2}"
-print("TEST 2 PASSED")
+REPRO_TEST = """from calculator import calculate_average
 
-bad_repro_test = "from calculator import calculate_average\ndef test_something():\n    assert calculate_average([10, 20]) == 15"
-res3 = run_pipeline(buggy_code, good_patch, bad_repro_test, regression_tests)
-assert res3["status"] == "INCONCLUSIVE" and res3["stage"] == "baseline", f"Got {res3}"
-print("TEST 3 PASSED")
+def test_empty():
+    assert calculate_average([]) == 0
+"""
 
-infinite_patch = "def calculate_average(numbers):\n    while True: pass\n    return 0"
-res4 = run_pipeline(buggy_code, infinite_patch, repro_test, regression_tests)
-assert res4["status"] == "INCONCLUSIVE" and res4["stage"] == "reproduction", f"Got {res4}"
-print("TEST 4 PASSED")
+REGRESSION_TEST = """from calculator import calculate_average
 
-print("\nALL PIPELINE TESTS PASSED")
+def test_normal():
+    assert calculate_average([2, 4, 6]) == 4
+"""
+
+
+def test_valid_patch_verifies():
+    good_patch = """def calculate_average(numbers):
+    if not numbers:
+        return 0
+    return sum(numbers) / len(numbers)
+"""
+    result = run_pipeline(
+        BUGGY_CODE, good_patch, REPRO_TEST, REGRESSION_TEST
+    )
+    assert result["status"] == "VERIFIED"
+
+
+def test_bad_patch_fails_regression():
+    bad_patch = """def calculate_average(numbers):
+    return 0
+"""
+    result = run_pipeline(
+        BUGGY_CODE, bad_patch, REPRO_TEST, REGRESSION_TEST
+    )
+    assert result["status"] == "FAILED"
+    assert result["stage"] == "regression"
+
+
+def test_passing_baseline_is_inconclusive():
+    passing_test = """from calculator import calculate_average
+
+def test_normal():
+    assert calculate_average([10, 20]) == 15
+"""
+    good_patch = """def calculate_average(numbers):
+    if not numbers:
+        return 0
+    return sum(numbers) / len(numbers)
+"""
+    result = run_pipeline(
+        BUGGY_CODE, good_patch, passing_test, REGRESSION_TEST
+    )
+    assert result["status"] == "INCONCLUSIVE"
+    assert result["stage"] == "baseline"
+
+
+def test_infinite_loop_times_out():
+    infinite_patch = """def calculate_average(numbers):
+    while True:
+        pass
+"""
+    result = run_pipeline(
+        BUGGY_CODE, infinite_patch, REPRO_TEST, REGRESSION_TEST
+    )
+    assert result["status"] == "INCONCLUSIVE"
+    assert result["stage"] == "reproduction"
+
+
+def test_contradictory_requirements_are_rejected():
+    contradictory_repro = """from calculator import calculate_average
+
+def test_empty_returns_none():
+    assert calculate_average([]) is None
+"""
+
+    contradictory_regression = """from calculator import calculate_average
+
+def test_empty_returns_zero():
+    assert calculate_average([]) == 0
+"""
+
+    contradictory_patch = """def calculate_average(numbers):
+    if not numbers:
+        return None
+    return sum(numbers) / len(numbers)
+"""
+
+    result = run_pipeline(
+        BUGGY_CODE,
+        contradictory_patch,
+        contradictory_repro,
+        contradictory_regression,
+    )
+    assert result["status"] == "FAILED"
+    assert result["stage"] == "regression"
+def test_suspicious_patch_is_rejected_by_audit():
+    suspicious_patch = """import inspect
+
+def calculate_average(numbers):
+    if not numbers:
+        return 0
+    return sum(numbers) / len(numbers)
+"""
+
+    result = run_pipeline(
+        BUGGY_CODE,
+        suspicious_patch,
+        REPRO_TEST,
+        REGRESSION_TEST,
+    )
+
+    assert result["status"] == "FAILED"
+    assert result["stage"] == "audit"
+    assert "inspect" in result["details"]["output"]

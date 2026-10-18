@@ -1,18 +1,18 @@
-
+from audit import audit_patch
 from sandbox import run_tests
 
 def run_pipeline(
-    original_source: str, 
-    patched_source: str, 
-    reproduction_test: str, 
-    regression_tests: str = "", 
+    original_source: str,
+    patched_source: str,
+    reproduction_test: str,
+    regression_tests: str = "",
     filename: str = "calculator.py"
 ) -> dict:
     baseline_result = run_tests({
         filename: original_source,
         "test_calculator.py": reproduction_test
     })
-    
+
     if baseline_result["status"] == "PASSED":
         return {
             "status": "INCONCLUSIVE",
@@ -28,11 +28,24 @@ def run_pipeline(
             "details": baseline_result
         }
 
+    problems = audit_patch(patched_source)
+    if problems:
+        return {
+            "status": "FAILED",
+            "stage": "audit",
+            "message": "Patch rejected by the suspicious-code audit.",
+            "details": {
+                "status": "FAILED",
+                "output": "; ".join(problems),
+                "error": None,
+            },
+        }
+
     repro_result = run_tests({
         filename: patched_source,
         "test_calculator.py": reproduction_test
     })
-    
+
     if repro_result["status"] != "PASSED":
         return {
             "status": "FAILED" if repro_result["status"] == "FAILED" else "INCONCLUSIVE",
@@ -47,7 +60,7 @@ def run_pipeline(
             filename: patched_source,
             "test_regression.py": regression_tests
         })
-        
+
         if regression_result["status"] != "PASSED":
             return {
                 "status": "FAILED" if regression_result["status"] == "FAILED" else "INCONCLUSIVE",

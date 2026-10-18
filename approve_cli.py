@@ -131,6 +131,10 @@ def main():
         print(f"Stage: {attempt.get('stage', 'unknown')}")
         print(f"Message: {attempt.get('message', '')}")
 
+        if attempt.get("patch"):
+            print("Patch:\n" + attempt["patch"])
+
+
         if attempt.get("details") is not None:
             print(f"Details: {attempt['details']}")
 
