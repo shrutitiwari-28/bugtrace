@@ -9,3 +9,7 @@ An AI-assisted bug-fix verifier that proves a fix works using sandboxed executio
 - Stops on INCONCLUSIVE results, including AI/API errors and execution timeouts.
 - Automated test suite: 25 passed.
 - Live Gemini conflict experiment: BLOCKED by API HTTP 503 errors and request timeouts; live-model behavior has not been verified.
+
+## Sandbox limitation
+
+Tests currently run in a subprocess with a timeout. Docker isolation is planned and is not yet implemented.
