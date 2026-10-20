@@ -15,6 +15,22 @@ An AI-assisted bug-fix verifier that proves a fix works using sandboxed executio
 
 ## Docker Sandbox
 
+### Build the sandbox
+
+Build the sandbox image before running BugTrace tests:
+
+```powershell
+docker build -t bugtrace-sandbox .
+```
+
+If the default build command fails, try:
+
+```powershell
+docker --context=default buildx build --load -t bugtrace-sandbox .
+```
+
+Verification is only as strong as the tests. The audit catches common test-gaming, not every trick.
+
 - Tests run inside the existing `bugtrace-sandbox:latest` Docker image.
 - Container restrictions include disabled networking, read-only root filesystem, dropped Linux capabilities, no-new-privileges, memory/CPU/PID limits, and a temporary filesystem.
 - Test execution has a timeout; timeout and Docker execution errors return INCONCLUSIVE.
