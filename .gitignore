@@ -3,3 +3,7 @@ __pycache__/
 .env
 *.pyc
 .vscode/
+
+# Temporary sandbox files and local backups
+sandbox_probe/
+*.bak

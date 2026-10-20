@@ -1,35 +1,41 @@
-import os
+﻿
 import subprocess
 import tempfile
 import uuid
+from pathlib import Path
 
 DOCKER_IMAGE = "bugtrace-sandbox:latest"
 
 
 def run_tests(files: dict, timeout: int = 10) -> dict:
+    """
+    Run pytest in a restricted Docker container.
+    Returns PASSED, FAILED, or INCONCLUSIVE.
+    """
     container_name = f"bugtrace-test-{uuid.uuid4().hex[:12]}"
 
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_abs = os.path.abspath(tmp)
-        container_created = False
+    try:
+        workspace_root = Path(__file__).resolve().parent / "sandbox_probe"
+        workspace_root.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=workspace_root) as tmp:
+            workspace = Path(tmp).resolve()
 
-        try:
-            for name, content in files.items():
-                file_path = os.path.abspath(os.path.join(tmp_abs, name))
+            for filename, content in files.items():
+                relative_path = Path(filename)
 
-                if os.path.commonpath([tmp_abs, file_path]) != tmp_abs:
+                if relative_path.is_absolute() or ".." in relative_path.parts:
                     return {
                         "status": "INCONCLUSIVE",
                         "output": "",
-                        "error": f"Invalid test filename: {name}",
+                        "error": "Unsafe test workspace filename.",
                     }
 
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write(content)
+                target = workspace / relative_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
 
-            create_cmd = [
-                "docker", "create",
+            command = [
+                "docker", "run",
                 "--name", container_name,
                 "--network", "none",
                 "--memory", "256m",
@@ -40,102 +46,77 @@ def run_tests(files: dict, timeout: int = 10) -> dict:
                 "--read-only",
                 "--tmpfs", "/tmp:rw,nosuid,nodev,size=64m",
                 "--mount",
-                f"type=bind,source={tmp_abs},target=/workspace",
+                f"type=bind,source={workspace},target=/workspace",
                 "--workdir", "/workspace",
                 DOCKER_IMAGE,
+                "python", "-m", "pytest", "-q", "-p",
+                "no:cacheprovider",
             ]
 
-            created = subprocess.run(
-                create_cmd, capture_output=True, text=True, timeout=30
-            )
-            if created.returncode != 0:
-                return {
-                    "status": "INCONCLUSIVE",
-                    "output": (created.stdout + created.stderr)[:5000],
-                    "error": "Docker could not create the test container.",
-                }
-
-            container_created = True
-
-            started = subprocess.run(
-                ["docker", "start", container_name],
-                capture_output=True, text=True, timeout=30
-            )
-            if started.returncode != 0:
-                return {
-                    "status": "INCONCLUSIVE",
-                    "output": (started.stdout + started.stderr)[:5000],
-                    "error": "Docker could not start the test container.",
-                }
-
             try:
-                waited = subprocess.run(
-                    ["docker", "wait", container_name],
-                    capture_output=True, text=True, timeout=timeout
-                )
+                with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as log_file:
+                    result = subprocess.run(
+                        command,
+                        stdout=log_file,
+                        stderr=subprocess.STDOUT,
+                        timeout=timeout + 30,
+                    )
+                    log_file.seek(0)
+                    output = log_file.read().strip()[-5000:]
+
+                if result.returncode == 0:
+                    status = "PASSED"
+                elif result.returncode == 1:
+                    status = "FAILED"
+                else:
+                    status = "INCONCLUSIVE"
+
+                return {
+                    "status": status,
+                    "output": output,
+                    "error": None if status != "INCONCLUSIVE"
+                    else f"Pytest exited with code {result.returncode}.",
+                }
+
             except subprocess.TimeoutExpired:
-                subprocess.run(
-                    ["docker", "kill", container_name],
-                    capture_output=True, text=True, timeout=10
-                )
-                logs = subprocess.run(
-                    ["docker", "logs", container_name],
-                    capture_output=True, text=True, timeout=10
-                )
+                try:
+                    logs = subprocess.run(
+                        ["docker", "logs", container_name],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                    )
+                    output = (logs.stdout + "\n" + logs.stderr).strip()
+                except (subprocess.TimeoutExpired, OSError):
+                    output = ""
+
                 return {
                     "status": "INCONCLUSIVE",
-                    "output": (logs.stdout + logs.stderr)[:5000],
-                    "error": "Test execution timed out; the container was stopped.",
+                    "output": output[-5000:],
+                    "error": "Docker test execution timed out.",
                 }
 
-            logs = subprocess.run(
-                ["docker", "logs", container_name],
-                capture_output=True, text=True, timeout=10
+            except OSError as exc:
+                return {
+                    "status": "INCONCLUSIVE",
+                    "output": "",
+                    "error": f"Docker could not be executed: {exc}",
+                }
+
+    except Exception as exc:
+        return {
+            "status": "INCONCLUSIVE",
+            "output": "",
+            "error": f"Sandbox setup failed: {exc}",
+        }
+
+    finally:
+        try:
+            subprocess.run(
+                ["docker", "rm", "-f", container_name],
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
-            output = (logs.stdout + logs.stderr)[:5000]
-
-            if waited.returncode != 0:
-                return {
-                    "status": "INCONCLUSIVE",
-                    "output": output,
-                    "error": "Docker failed while waiting for the test container.",
-                }
-
-            try:
-                exit_code = int(waited.stdout.strip())
-            except ValueError:
-                return {
-                    "status": "INCONCLUSIVE",
-                    "output": output,
-                    "error": "Docker returned an invalid container exit code.",
-                }
-
-            status = {0: "PASSED", 1: "FAILED"}.get(
-                exit_code, "INCONCLUSIVE"
-            )
-
-            return {
-                "status": status,
-                "output": output,
-                "error": None if status != "INCONCLUSIVE"
-                else f"Test process exited unexpectedly with code {exit_code}.",
-            }
-
-        except subprocess.TimeoutExpired:
-            return {
-                "status": "INCONCLUSIVE",
-                "output": "",
-                "error": "Docker operation timed out.",
-            }
-        except Exception as e:
-            return {
-                "status": "INCONCLUSIVE",
-                "output": "",
-                "error": str(e),
-            }
-        finally:
-            if container_created:
-                subprocess.run(
-                    ["docker", "rm", "-f", container_name],
-                    capture_output=True, text=True, timeout=10
-                )
+        except (subprocess.TimeoutExpired, OSError):
+            pass

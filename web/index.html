@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BugTrace</title>
+<link rel="stylesheet" href="/web/style.css">
+</head>
+<body data-status="">
+<header class="top">
+  <div class="brand">BugTrace</div>
+  <ol class="steps" aria-label="Progress">
+    <li id="st1" class="on">Describe the bug</li>
+    <li id="st2">Review the test</li>
+    <li id="st3">Result</li>
+  </ol>
+</header>
+
+<main>
+<section id="p1">
+  <h1>Check an AI-generated fix before you trust it.</h1>
+  <p class="lead">Paste buggy Python code and say what it should do. BugTrace writes a test, proposes a fix, and runs both in an isolated container.</p>
+
+  <div class="row">
+    <label for="example">Start from an example</label>
+    <select id="example"></select>
+  </div>
+
+  <label for="source">Code with the bug</label>
+  <textarea id="source" rows="8" spellcheck="false"></textarea>
+  <p class="hint">Saved as calculator.py. Tests import from calculator.</p>
+
+  <label for="error">Error or wrong result</label>
+  <textarea id="error" rows="3" spellcheck="false"></textarea>
+
+  <label for="expected">What should it do instead?</label>
+  <textarea id="expected" rows="2"></textarea>
+
+  <button id="go1" class="btn">Write a test</button>
+  <p id="e1" class="err" role="alert"></p>
+</section>
+
+<section id="p2" hidden>
+  <h1>Review the test.</h1>
+  <p class="lead">This test decides what counts as fixed. Edit it if it is wrong. Once you run the check, it stays fixed for every attempt.</p>
+
+  <h2>Diagnosis</h2>
+  <p id="diag" class="diag"></p>
+
+  <label for="test">Test that must pass</label>
+  <textarea id="test" rows="9" spellcheck="false"></textarea>
+
+  <label for="reg">Existing tests that must keep passing (optional)</label>
+  <textarea id="reg" rows="5" spellcheck="false"></textarea>
+
+  <div class="actions">
+    <button id="go2" class="btn">Run verification</button>
+    <button id="back" class="btn ghost">Back</button>
+  </div>
+  <p id="e2" class="err" role="alert"></p>
+</section>
+
+<section id="p3" hidden>
+  <div class="verdict" id="verdict">
+    <p class="vlabel">Result</p>
+    <h1 id="vword"></h1>
+    <p id="vmsg" class="vmsg"></p>
+    <div id="vchips" class="chips"></div>
+  </div>
+
+  <div class="cols">
+    <div class="box">
+      <div class="boxhead"><h2>Proposed fix</h2><button id="copy" class="btn small">Copy</button></div>
+      <pre id="patch" class="code"></pre>
+    </div>
+    <div class="box">
+      <h2>Sandbox output</h2>
+      <pre id="out" class="code"></pre>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>All attempts</h2>
+    <div id="attempts"></div>
+  </div>
+
+  <div class="actions">
+    <button id="dl" class="btn ghost">Download report</button>
+    <button id="again" class="btn">Check another bug</button>
+  </div>
+  <p class="foot">Verified means the approved tests passed in a sandbox. It does not prove the code is correct for every input.</p>
+</section>
+</main>
+<script src="/web/app.js"></script>
+</body>
+</html>
