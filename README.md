@@ -34,7 +34,7 @@ Verification is only as strong as the tests. The audit catches common test-gamin
 - Tests run inside the existing `bugtrace-sandbox:latest` Docker image.
 - Container restrictions include disabled networking, read-only root filesystem, dropped Linux capabilities, no-new-privileges, memory/CPU/PID limits, and a temporary filesystem.
 - Test execution has a timeout; timeout and Docker execution errors return INCONCLUSIVE.
-- Full automated suite verified: 25 passed.
+- Full automated suite verified: 33 passed.
 - These restrictions reduce risk but do not guarantee protection against every container escape or denial-of-service attack.
 
 ## Day 6 - Web Interface and End-to-End Verification
@@ -44,6 +44,6 @@ Verification is only as strong as the tests. The audit catches common test-gamin
 - Verified the complete workflow: bug submission, diagnosis, test review, repair, and sandbox verification.
 - Confirmed Docker sandbox execution with networking disabled and container restrictions enabled.
 - End-to-end example verified: `calculate_average([])` is handled by returning `None` instead of raising `ZeroDivisionError`.
-- Live verification result: VERIFIED; 2 tests passed.
-- Full automated test suite: 26 passed.
+- Live verification result: VERIFIED (the approved test failed on the original code and passed on the patch).
+- Full automated test suite: 33 passed.
 - The verification result is limited to the tests executed and does not guarantee correctness for every possible input.

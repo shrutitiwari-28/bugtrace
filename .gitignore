@@ -7,3 +7,6 @@ __pycache__/
 # Temporary sandbox files and local backups
 sandbox_probe/
 *.bak
+
+# Temporary sandbox workspaces
+.sandbox_work/

@@ -15,7 +15,7 @@ def run_tests(files: dict, timeout: int = 10) -> dict:
     container_name = f"bugtrace-test-{uuid.uuid4().hex[:12]}"
 
     try:
-        workspace_root = Path(__file__).resolve().parent / "sandbox_probe"
+        workspace_root = Path(__file__).resolve().parent / ".sandbox_work"
         workspace_root.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=workspace_root) as tmp:
             workspace = Path(tmp).resolve()
@@ -57,6 +57,7 @@ def run_tests(files: dict, timeout: int = 10) -> dict:
                 with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as log_file:
                     result = subprocess.run(
                         command,
+                        stdin=subprocess.DEVNULL,
                         stdout=log_file,
                         stderr=subprocess.STDOUT,
                         timeout=timeout + 30,
