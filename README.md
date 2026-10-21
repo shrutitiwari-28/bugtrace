@@ -1,4 +1,4 @@
-﻿# BugTrace
+# BugTrace
 
 An AI-assisted bug-fix verifier that uses approved tests, sandboxed execution, and automated checks to evaluate proposed code fixes.
 
@@ -59,6 +59,6 @@ docker --context=default buildx build --load -t bugtrace-sandbox .
 - `docs/screenshots/04-failed.png` — Failed result screen from a local test scenario.
 - `docs/screenshots/04-inconclusive.png` — Inconclusive result screen.
 - `docs/screenshots/inconclusive-api-error.png` — an inconclusive AI API error; not evidence of a successful AI repair.
-- `docs/screenshots/verified-incorrect-fix.png` — example illustrating why test-based verification has limitations.
+- `docs/screenshots/verified-incorrect-fix.png` — the test checks only whether an empty list returns 0, so a patch that always returns 0 could pass while calculating normal averages incorrectly.
 
 Verification is only as strong as the tests executed. The audit catches common test-gaming patterns but cannot guarantee that every possible incorrect fix will be detected.
