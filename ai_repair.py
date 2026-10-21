@@ -91,18 +91,30 @@ def _call_model(prompt, required_keys):
         }
 
     try:
+        import time
         from openai import OpenAI
 
         client = OpenAI(api_key=api_key, base_url=base_url)
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.2,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        text = response.choices[0].message.content or ""
+
+        for attempt in range(2):
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    temperature=0.2,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                )
+                text = response.choices[0].message.content or ""
+                break
+            except Exception as exc:
+                status_code = getattr(exc, "status_code", None)
+
+                if attempt == 0 and status_code in (429, 503):
+                    time.sleep(2)
+                    continue
+                raise
 
     except Exception as exc:
         return {

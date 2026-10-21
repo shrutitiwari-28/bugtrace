@@ -149,3 +149,55 @@ def test_propose_patch_uses_frozen_test_and_patch_schema(monkeypatch):
     assert "Previous attempts" in captured["prompt"]
     assert "Test failed" in captured["prompt"]
     assert set(result["data"]) == {"patched_source"}
+from types import SimpleNamespace
+import pytest
+
+
+@pytest.mark.parametrize("status_code", [429, 503])
+def test_call_model_retries_temporary_api_error(monkeypatch, status_code):
+    import sys
+    import time
+
+    calls = {"count": 0}
+
+    class FakeAPIError(Exception):
+        def __init__(self, code):
+            super().__init__(f"Temporary HTTP {code} error")
+            self.status_code = code
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.chat = SimpleNamespace(
+                completions=SimpleNamespace(create=self.create)
+            )
+
+        def create(self, **kwargs):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise FakeAPIError(status_code)
+
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(
+                            content='{"diagnosis": "ok", "reproduction_test": "def test_ok():\\n    assert True"}'
+                        )
+                    )
+                ]
+            )
+
+    monkeypatch.setenv("LLM_API_KEY", "fake-key")
+    monkeypatch.setenv("LLM_BASE_URL", "https://example.invalid/v1")
+    monkeypatch.setenv("LLM_MODEL", "fake-model")
+    monkeypatch.setattr(time, "sleep", lambda _: None)
+    monkeypatch.setitem(
+        sys.modules,
+        "openai",
+        SimpleNamespace(OpenAI=FakeOpenAI),
+    )
+
+    result = ai_repair._call_model("test prompt", TEST_KEYS)
+
+    assert result["ok"] is True
+    assert result["data"]["diagnosis"] == "ok"
+    assert calls["count"] == 2
