@@ -1,4 +1,4 @@
-﻿
+
 import subprocess
 import tempfile
 import uuid
@@ -79,7 +79,10 @@ def run_tests(files: dict, timeout: int = 10) -> dict:
                     else f"Pytest exited with code {result.returncode}.",
                 }
 
+
             except subprocess.TimeoutExpired:
+                output = ""
+
                 try:
                     logs = subprocess.run(
                         ["docker", "logs", container_name],
@@ -88,13 +91,22 @@ def run_tests(files: dict, timeout: int = 10) -> dict:
                         timeout=10,
                     )
                     output = (logs.stdout + "\n" + logs.stderr).strip()
-                except (subprocess.TimeoutExpired, OSError):
-                    output = ""
+
+                    if logs.returncode != 0 and not output:
+                        output = (
+                            "Container logs unavailable. "
+                            f"Docker logs command exited with code {logs.returncode}."
+                        )
+
+                except subprocess.TimeoutExpired:
+                    output = "Timed out while retrieving Docker logs."
+                except OSError as exc:
+                    output = f"Could not retrieve Docker logs: {exc}"
 
                 return {
                     "status": "INCONCLUSIVE",
                     "output": output[-5000:],
-                    "error": "Docker test execution timed out.",
+                    "error": "Docker execution timed out before verification completed.",
                 }
 
             except OSError as exc:

@@ -34,16 +34,21 @@ Verification is only as strong as the tests. The audit catches common test-gamin
 - Tests run inside the existing `bugtrace-sandbox:latest` Docker image.
 - Container restrictions include disabled networking, read-only root filesystem, dropped Linux capabilities, no-new-privileges, memory/CPU/PID limits, and a temporary filesystem.
 - Test execution has a timeout; timeout and Docker execution errors return INCONCLUSIVE.
-- Full automated suite verified: 33 passed.
+- Earlier automated test run: 33 passed. A later run reported 28 passed and 5 failed while Docker container startup was timing out.
 - These restrictions reduce risk but do not guarantee protection against every container escape or denial-of-service attack.
 
 ## Day 6 - Web Interface and End-to-End Verification
 
 - Added a browser-based BugTrace interface using HTML, CSS, and JavaScript.
 - Integrated the interface with FastAPI endpoints for investigation and repair.
-- Verified the complete workflow: bug submission, diagnosis, test review, repair, and sandbox verification.
-- Confirmed Docker sandbox execution with networking disabled and container restrictions enabled.
-- End-to-end example verified: `calculate_average([])` is handled by returning `None` instead of raising `ZeroDivisionError`.
-- Live verification result: VERIFIED (the approved test failed on the original code and passed on the patch).
-- Full automated test suite: 33 passed.
+- Implemented the browser workflow for bug submission, diagnosis, test review, repair, and verification.
+- Earlier end-to-end verification succeeded, but the current environment has a Docker container-startup issue; current live verification is blocked and must be rerun after Docker is fixed.
+- Latest automated test run: 28 passed, 5 failed. The failures returned `INCONCLUSIVE` because the baseline sandbox could not complete; successful live verification is not currently confirmed.
 - The verification result is limited to the tests executed and does not guarantee correctness for every possible input.
+
+
+## Troubleshooting Evidence
+
+- `docs/screenshots/inconclusive-api-error.png` records an inconclusive AI API error. It is not evidence of a successful Docker sandbox run.
+- Current local diagnostic: Docker Engine responds and the `bugtrace-sandbox:latest` image is present, but a `hello-world` container timed out during startup.
+- Do not treat current sandbox verification as successful until container execution and the end-to-end tests pass again.
