@@ -48,7 +48,7 @@ docker --context=default buildx build --load -t bugtrace-sandbox .
 - Captured workflow screenshots in `docs/screenshots/`, including form, test review, Verified, Failed, and Inconclusive results.
 - The Failed UI demonstration used a locally supplied test patch to avoid calling the AI provider.
 - Docker smoke testing and automated tests passed after the startup issue was fixed.
-- **Live AI-provider verification remains pending.** An earlier AI API error is documented separately; no current live AI success is claimed.
+- **Live AI-provider verification succeeded (22 Oct 2026).** The AI-generated fix was verified in Docker: baseline reproduced the bug (1 failed, 1 passed), reproduction tests passed (2 passed), and regression tests passed (1 passed).
 - A VERIFIED result means the approved tests passed in the sandbox. It does not prove correctness for every possible input.
 
 ## Troubleshooting Evidence

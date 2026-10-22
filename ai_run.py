@@ -34,3 +34,4 @@ verdict = run_pipeline(
 
 print("\nSTATUS:", verdict["status"], "| stage:", verdict["stage"])
 print("MESSAGE:", verdict["message"])
+print("DETAILS:", verdict.get("details"))
