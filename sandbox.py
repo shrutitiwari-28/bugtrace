@@ -1,10 +1,12 @@
 
+import re
 import subprocess
 import tempfile
 import uuid
 from pathlib import Path
 
 DOCKER_IMAGE = "bugtrace-sandbox:latest"
+PYTEST_SUMMARY = re.compile(r"[0-9]+ (passed|failed|error)", re.IGNORECASE)
 
 
 def run_tests(files: dict, timeout: int = 10) -> dict:
@@ -67,7 +69,7 @@ def run_tests(files: dict, timeout: int = 10) -> dict:
 
                 if result.returncode == 0:
                     status = "PASSED"
-                elif result.returncode == 1:
+                elif result.returncode == 1 and PYTEST_SUMMARY.search(output):
                     status = "FAILED"
                 else:
                     status = "INCONCLUSIVE"
