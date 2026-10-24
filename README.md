@@ -73,5 +73,7 @@ Verification is only as strong as the tests executed. The audit catches common t
 - Focused API and sandbox-status tests passed: **11 passed**.
 - JavaScript syntax check passed using `node --check web/app.js`.
 - `git diff --check` reports no whitespace errors; only Windows LF/CRLF conversion warnings remain.
-- **Known limitation (24 Oct 2026):** Docker container startup is currently unreliable on this 4 GB RAM laptop. A minimal Docker command took about 60 seconds, and a sandbox run timed out. Day 7 Docker/browser end-to-end verification remains pending; do not interpret the focused test results as proof that this workflow passed end to end.
+- Docker sandbox smoke test passed, and direct pipeline verification correctly rejected the suspicious patch at the Audit stage (`sys` import and `_getframe` introspection detected).
+- Captured the audit-rejection evidence in `docs/screenshots/06-audit-rejected.png`.
+- The browser's earlier run showed INCONCLUSIVE at Baseline; after restarting the server, recheck the browser workflow before claiming full end-to-end verification.
 - Demo videos are deferred until final submission preparation.
