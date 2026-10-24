@@ -62,3 +62,16 @@ docker --context=default buildx build --load -t bugtrace-sandbox .
 - `docs/screenshots/verified-incorrect-fix.png` — the test checks only whether an empty list returns 0, so a patch that always returns 0 could pass while calculating normal averages incorrectly.
 
 Verification is only as strong as the tests executed. The audit catches common test-gaming patterns but cannot guarantee that every possible incorrect fix will be detected.
+
+## Day 7 - User-Supplied Fix Verification and UI Improvements
+
+- Added the `/verify` API endpoint to verify a user-supplied patch without requiring AI-generated changes.
+- Added API tests for verification results and invalid approved tests.
+- Added UI support for supplying your own fix, with example correct, incorrect, and suspicious patches.
+- Added a Before/After panel to show baseline and reproduction results when available.
+- Added Docker failure handling so infrastructure errors and timeouts return INCONCLUSIVE rather than being reported as a verified fix or ordinary test failure.
+- Focused API and sandbox-status tests passed: **11 passed**.
+- JavaScript syntax check passed using `node --check web/app.js`.
+- `git diff --check` reports no whitespace errors; only Windows LF/CRLF conversion warnings remain.
+- **Known limitation (24 Oct 2026):** Docker container startup is currently unreliable on this 4 GB RAM laptop. A minimal Docker command took about 60 seconds, and a sandbox run timed out. Day 7 Docker/browser end-to-end verification remains pending; do not interpret the focused test results as proof that this workflow passed end to end.
+- Demo videos are deferred until final submission preparation.

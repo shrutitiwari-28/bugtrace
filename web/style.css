@@ -74,3 +74,74 @@ details.att .code{margin-top:10px}
 
 @media(max-width:760px){.cols{grid-template-columns:1fr}.steps li:not(.on){display:none}}
 @media(prefers-reduced-motion:no-preference){.verdict{animation:in .3s ease-out}@keyframes in{from{opacity:.4;transform:translateY(6px)}}}
+
+
+/* Before / After verification comparison */
+.before-after-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.compare-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border, #d9d9d9);
+  border-radius: 10px;
+}
+
+.compare-card h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.compare-status {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.compare-status.FAILED {
+  color: #a12626;
+  background: #fde8e7;
+}
+
+.compare-status.PASSED {
+  color: #176b43;
+  background: #e2f5e9;
+}
+
+.compare-status.INCONCLUSIVE,
+.compare-status.UNKNOWN {
+  color: #805b13;
+  background: #fff1cc;
+}
+
+.compare-card .code {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.compare-card.before {
+  border-color: #e7b5b2;
+}
+
+.compare-card.after {
+  border-color: #a8d8ba;
+}
+
+@media (max-width: 650px) {
+  .before-after-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.check{display:flex;align-items:center;gap:8px;font-weight:600;margin-top:20px;cursor:pointer}
+.check input{width:18px;height:18px}
+#ownwrap{margin-top:12px}
+#patch_in{width:100%;font-family:monospace}

@@ -62,7 +62,7 @@ def run_tests(files: dict, timeout: int = 10) -> dict:
                         stdin=subprocess.DEVNULL,
                         stdout=log_file,
                         stderr=subprocess.STDOUT,
-                        timeout=timeout + 30,
+                        timeout=timeout + 60,
                     )
                     log_file.seek(0)
                     output = log_file.read().strip()[-5000:]

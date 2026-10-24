@@ -88,3 +88,25 @@ def test_repair_returns_attempts(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["status"] == "VERIFIED"
+
+
+def test_verify_returns_attempt(monkeypatch):
+    monkeypatch.setattr(api, "run_pipeline", lambda *a, **k: {
+        "status": "FAILED", "stage": "audit", "message": "m", "details": {"output": "x"}})
+    r = client.post("/verify", json={
+        "source": "x = 0\n",
+        "patched_source": "x = 1\n",
+        "approved_test": OK_TEST,
+    })
+    assert r.status_code == 200
+    assert r.json()["status"] == "FAILED"
+    assert r.json()["attempts"][0]["stage"] == "audit"
+
+
+def test_verify_rejects_bad_test():
+    r = client.post("/verify", json={
+        "source": "x = 0\n",
+        "patched_source": "x = 1\n",
+        "approved_test": "def test_x(:\n",
+    })
+    assert r.status_code == 400

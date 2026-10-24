@@ -36,6 +36,11 @@
   <label for="expected">What should it do instead?</label>
   <textarea id="expected" rows="2"></textarea>
 
+  <label class="check"><input type="checkbox" id="own"> I already have a fix to check (skip the AI)</label>
+  <div id="ownwrap" hidden>
+    <label for="patch_in">Fix to check</label>
+    <textarea id="patch_in" rows="8" spellcheck="false"></textarea>
+  </div>
   <button id="go1" class="btn">Write a test</button>
   <p id="e1" class="err" role="alert"></p>
 </section>
@@ -67,6 +72,22 @@
     <p id="vmsg" class="vmsg"></p>
     <div id="vchips" class="chips"></div>
   </div>
+
+  <section id="beforeAfter" class="box before-after" hidden aria-label="Before and after verification">
+    <h2>Before / After</h2>
+    <div class="before-after-grid">
+      <article class="compare-card before">
+        <h3>Before ? Original code</h3>
+        <p id="beforeStatus" class="compare-status"></p>
+        <pre id="beforeOutput" class="code"></pre>
+      </article>
+      <article class="compare-card after">
+        <h3>After — proposed fix</h3>
+        <p id="afterStatus" class="compare-status"></p>
+        <pre id="afterOutput" class="code"></pre>
+      </article>
+    </div>
+  </section>
 
   <div class="cols">
     <div class="box">

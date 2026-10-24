@@ -19,6 +19,30 @@ const EXAMPLES = {
     expected: "first_n(items, n) returns the first n items of the list.",
     reg: "from calculator import first_n\n\ndef test_empty():\n    assert first_n([], 2) == []\n",
   },
+  "Check a correct fix (no AI)": {
+    source: "def calculate_average(numbers):\n    return sum(numbers) / len(numbers)\n",
+    error: "ZeroDivisionError: division by zero when numbers is []",
+    expected: "Return None for an empty list.",
+    test: "from calculator import calculate_average\n\ndef test_empty_returns_none():\n    assert calculate_average([]) is None\n",
+    reg: "from calculator import calculate_average\n\ndef test_normal_average():\n    assert calculate_average([2, 4, 6]) == 4\n",
+    patch: "def calculate_average(numbers):\n    if not numbers:\n        return None\n    return sum(numbers) / len(numbers)\n",
+  },
+  "Check a wrong fix (no AI)": {
+    source: "def calculate_average(numbers):\n    return sum(numbers) / len(numbers)\n",
+    error: "ZeroDivisionError: division by zero when numbers is []",
+    expected: "Return 0 for an empty list.",
+    test: "from calculator import calculate_average\n\ndef test_empty_returns_zero():\n    assert calculate_average([]) == 0\n",
+    reg: "from calculator import calculate_average\n\ndef test_normal_average():\n    assert calculate_average([2, 4, 6]) == 4\n",
+    patch: "def calculate_average(numbers):\n    return 0\n",
+  },
+  "Check a sneaky fix (no AI)": {
+    source: "def calculate_average(numbers):\n    return sum(numbers) / len(numbers)\n",
+    error: "ZeroDivisionError: division by zero when numbers is []",
+    expected: "Return None for an empty list.",
+    test: "from calculator import calculate_average\n\ndef test_empty_returns_none():\n    assert calculate_average([]) is None\n",
+    reg: "from calculator import calculate_average\n\ndef test_normal_average():\n    assert calculate_average([2, 4, 6]) == 4\n",
+    patch: "import sys\n\ndef calculate_average(numbers):\n    if not numbers:\n        if 'test' in sys._getframe(1).f_code.co_name:\n            return None\n        return 0\n    return sum(numbers) / len(numbers)\n",
+  },
   "Blank form": { source: "", error: "", expected: "", reg: "" },
 };
 
@@ -57,9 +81,19 @@ function busy(btn, text, on) {
   else { btn.textContent = btn.dataset.label; btn.disabled = false; }
 }
 
+function toggleOwn() {
+  $("ownwrap").hidden = !$("own").checked;
+  $("go1").textContent = $("own").checked ? "Continue" : "Write a test";
+}
+$("own").onchange = toggleOwn;
+
 function loadExample(name) {
   const e = EXAMPLES[name];
   $("source").value = e.source; $("error").value = e.error; $("expected").value = e.expected; $("reg").value = e.reg;
+  $("test").value = e.test || "";
+  $("patch_in").value = e.patch || "";
+  $("own").checked = Boolean(e.patch);
+  toggleOwn();
 }
 
 $("example").append(...Object.keys(EXAMPLES).map((k) => Object.assign(el("option"), { value: k, textContent: k })));
@@ -70,6 +104,15 @@ $("go1").onclick = async () => {
   $("e1").textContent = "";
   if (!$("source").value.trim() || !$("expected").value.trim()) {
     $("e1").textContent = "Add the code and what it should do.";
+    return;
+  }
+  if ($("own").checked) {
+    if (!$("patch_in").value.trim()) {
+      $("e1").textContent = "Paste the fix you want to check.";
+      return;
+    }
+    $("diag").textContent = "You supplied this fix, so the AI is not used. The test below defines correct behavior.";
+    show(2);
     return;
   }
   busy($("go1"), "Writing a test...", true);
@@ -101,12 +144,15 @@ $("go2").onclick = async () => {
   const tick = setInterval(() => { $("go2").textContent = "Running checks... " + Math.floor((Date.now() - t0) / 1000) + "s"; }, 500);
   busy($("go2"), "Running checks...", true);
   try {
-    const r = await post("/repair", {
+    const own = $("own").checked;
+    const body = {
       source: $("source").value,
       approved_test: $("test").value,
       error_output: $("error").value,
       regression_tests: $("reg").value,
-    });
+    };
+    if (own) body.patched_source = $("patch_in").value;
+    const r = await post(own ? "/verify" : "/repair", body);
     lastReport = { created: new Date().toISOString(), source: $("source").value, approved_test: $("test").value, regression_tests: $("reg").value, result: r };
     render(r);
     show(3);
@@ -157,6 +203,28 @@ function render(r) {
   if (status === "FAILED") msg = attempts.length + (attempts.length === 1 ? " fix was" : " fixes were") + " tried. " + msg;
   $("vmsg").textContent = msg;
   chipRow(last, $("vchips"));
+
+  // Show real before/after test results when the pipeline provides them.
+  const details = last.details || {};
+  const before = details.baseline;
+  const after = details.reproduction;
+  const panel = $("beforeAfter");
+
+  if (panel) {
+    panel.hidden = !(status === "VERIFIED" && before && after);
+
+    if (before && after) {
+      $("beforeStatus").textContent = before.status || "UNKNOWN";
+      $("beforeStatus").className =
+        "compare-status " + (before.status || "UNKNOWN");
+      $("beforeOutput").textContent = outputText(before);
+
+      $("afterStatus").textContent = after.status || "UNKNOWN";
+      $("afterStatus").className =
+        "compare-status " + (after.status || "UNKNOWN");
+      $("afterOutput").textContent = outputText(after);
+    }
+  }
 
   $("patch").textContent = "";
   $("patch").append(last.patch ? diffBlock(last.patch) : el("span", "", "No patch was produced."));

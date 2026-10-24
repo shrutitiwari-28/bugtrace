@@ -1,10 +1,11 @@
-﻿
+
 import ast
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from repair_loop import investigate, repair
+from pipeline import run_pipeline
 
 app = FastAPI(title="BugTrace API", version="1.0.0")
 
@@ -33,6 +34,13 @@ class InvestigateRequest(BaseModel):
     expected_behavior: str = Field(max_length=MAX_EXPECTED)
     module: str = Field(default="calculator", max_length=MAX_MODULE)
 
+
+class VerifyRequest(BaseModel):
+    source: str = Field(max_length=MAX_SOURCE)
+    patched_source: str = Field(max_length=MAX_SOURCE)
+    approved_test: str = Field(max_length=MAX_TEST)
+    regression_tests: str = Field(default="", max_length=MAX_REGRESSION)
+    module: str = Field(default="calculator", max_length=MAX_MODULE)
 
 class RepairRequest(BaseModel):
     source: str = Field(max_length=MAX_SOURCE)
@@ -102,10 +110,30 @@ def repair_endpoint(request: RepairRequest):
         )
 
 
+@app.post("/verify")
+def verify_endpoint(request: VerifyRequest):
+    validate_module(request.module)
+    for label, code in (("Approved test", request.approved_test), ("Source code", request.source)):
+        try:
+            ast.parse(code)
+        except SyntaxError as exc:
+            raise HTTPException(status_code=400, detail=f"{label} has invalid Python syntax: {exc.msg}")
+    try:
+        v = run_pipeline(request.source, request.patched_source, request.approved_test,
+                         request.regression_tests, filename=f"{request.module}.py")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Verification failed unexpectedly.")
+    return {
+        "status": v.get("status", "INCONCLUSIVE"),
+        "attempts": [{
+            "attempt": 1, "patch": request.patched_source, "status": v.get("status", "INCONCLUSIVE"),
+            "stage": v.get("stage", "unknown"), "message": v.get("message", ""), "details": v.get("details"),
+        }],
+    }
+
 def validate_module(module: str):
     if not module.isidentifier() or module.startswith("_"):
         raise HTTPException(
             status_code=400,
             detail="Module must be a valid Python identifier.",
         )
-
