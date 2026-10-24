@@ -135,7 +135,16 @@ $("go1").onclick = async () => {
 };
 
 $("back").onclick = () => show(1);
-$("again").onclick = () => { document.body.dataset.status = ""; show(1); };
+$("again").onclick = () => {
+  document.body.dataset.status = "";
+  lastReport = null;
+  $("example").value = "Blank form";
+  loadExample("Blank form");
+  $("e1").textContent = "";
+  $("e2").textContent = "";
+  $("diag").textContent = "";
+  show(1);
+};
 
 $("go2").onclick = async () => {
   $("e2").textContent = "";
