@@ -78,7 +78,11 @@ def run(bugs, out, sleep):
             print(f"skip {b['id']} (already {old['status']})")
             continue
         start = time.time()
-        r = repair(b["source"], b["test"], b["error"], b["regression"], "calculator")
+        try:
+            r = repair(b["source"], b["test"], b["error"], b["regression"], "calculator")
+        except KeyboardInterrupt:
+            print("\\nBenchmark interrupted. Previously saved results are preserved.")
+            break
         attempts = r["attempts"]
         last = attempts[-1] if attempts else {}
         results[b["id"]] = {
@@ -97,8 +101,14 @@ def run(bugs, out, sleep):
         }
         save(out, results)
         print(f"{b['id']} {b['category']}: {r['status']} (stage {last.get('stage')}, {len(attempts)} attempt(s))")
-        if last.get("stage") == "ai" and "429" in str(last.get("message")):
-            print("AI quota reached. Stop here and run the same command again later.")
+        message = str(last.get("message", "")).lower()
+        if last.get("stage") == "ai" and (
+            "429" in message
+            or "timed out" in message
+            or "timeout" in message
+            or "connection" in message
+        ):
+            print("AI provider unavailable or quota-limited. Stop here; saved results are preserved.")
             break
         time.sleep(sleep)
 
