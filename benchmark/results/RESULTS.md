@@ -1,7 +1,7 @@
 | ID | Category | Set | Result | Stopped at | Attempts | Seconds |
 |---|---|---|---|---|---|---|
-| B01 | empty input | tuning | INCONCLUSIVE | ai | 1 | 16.2 |
-| B02 | off-by-one | tuning | INCONCLUSIVE | ai | 1 | 51.6 |
+| B01 | empty input | tuning | INCONCLUSIVE | ai | 1 | 67.0 |
+| B02 | off-by-one | tuning | INCONCLUSIVE | ai | 1 | 60.2 |
 | B03 | wrong dictionary key | tuning | INCONCLUSIVE | ai | 1 | 14.4 |
 | B04 | None handling | tuning | INCONCLUSIVE | ai | 1 | 477.5 |
 | B05 | wrong condition | tuning | INCONCLUSIVE | ai | 1 | 13.5 |
