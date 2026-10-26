@@ -1,0 +1,16 @@
+{
+  "B11": {
+    "id": "B11",
+    "split": "heldout",
+    "category": "duplicates",
+    "status": "INCONCLUSIVE",
+    "stage": "ai",
+    "attempts": 1,
+    "first_attempt_verified": false,
+    "seconds": 65.4,
+    "message": "API call failed: Request timed out.",
+    "final_patch": null,
+    "model": "gemini-3.7-flash",
+    "ran_at": "2026-10-26T15:36:14+00:00"
+  }
+}
