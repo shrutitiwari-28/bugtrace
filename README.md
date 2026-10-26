@@ -77,3 +77,15 @@ Verification is only as strong as the tests executed. The audit catches common t
 - Captured the audit-rejection evidence in `docs/screenshots/06-audit-rejected.png`.
 - The browser's earlier run showed INCONCLUSIVE at Baseline; after restarting the server, recheck the browser workflow before claiming full end-to-end verification.
 - Demo videos are deferred until final submission preparation.
+
+## Day 8 - Benchmark Evaluation (In Progress)
+
+- Created and validated a benchmark dataset of 15 bugs: 10 tuning cases (B01-B10) and 5 held-out cases (B11-B15).
+- Offline benchmark-data tests passed: **4 passed**.
+- Full automated test suite passed: **42 passed**.
+- Froze and pushed the validated dataset at commit `bc2c42c663a3d31ea982a363e07e1fb5a26feab3`, tagged `benchmark-freeze`.
+- Initial tuning attempts for B01-B05 were all **INCONCLUSIVE** because of AI-provider connection, availability, or quota errors. These are not counted as successful or failed repairs.
+- The held-out evaluation has **not yet been completed**. No benchmark accuracy claim is made.
+- Results are recorded in `benchmark/results/RESULTS.md`; tuning data is saved in `benchmark/results/tuning.json`.
+- Limitations: the benchmark contains only 15 small bugs. Passing approved tests does not prove correctness for all inputs, and these results should not be treated as a general measure of real-world bug-fixing accuracy.
+
