@@ -94,7 +94,12 @@ def _call_model(prompt, required_keys):
         import time
         from openai import OpenAI
 
-        client = OpenAI(api_key=api_key, base_url=base_url)
+        client = OpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=60.0,
+            max_retries=0,
+        )
 
         for attempt in range(2):
             try:
@@ -111,7 +116,7 @@ def _call_model(prompt, required_keys):
             except Exception as exc:
                 status_code = getattr(exc, "status_code", None)
 
-                if attempt == 0 and status_code in (429, 503):
+                if attempt == 0 and status_code == 503:
                     time.sleep(2)
                     continue
                 raise

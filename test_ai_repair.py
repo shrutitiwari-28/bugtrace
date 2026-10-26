@@ -198,6 +198,11 @@ def test_call_model_retries_temporary_api_error(monkeypatch, status_code):
 
     result = ai_repair._call_model("test prompt", TEST_KEYS)
 
-    assert result["ok"] is True
-    assert result["data"]["diagnosis"] == "ok"
-    assert calls["count"] == 2
+    if status_code == 429:
+        assert result["ok"] is False
+        assert "API call failed" in result["error"]
+        assert calls["count"] == 1
+    else:
+        assert result["ok"] is True
+        assert result["data"]["diagnosis"] == "ok"
+        assert calls["count"] == 2
