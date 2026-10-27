@@ -1,0 +1,16 @@
+{
+  "B01": {
+    "id": "B01",
+    "split": "tuning",
+    "category": "empty input",
+    "status": "INCONCLUSIVE",
+    "stage": "baseline",
+    "attempts": 1,
+    "first_attempt_verified": false,
+    "seconds": 45.3,
+    "message": "Baseline test execution resulted in syntax error or timeout.",
+    "final_patch": "def calculate_average(numbers):\n    if not numbers:\n        return None\n    return sum(numbers) / len(numbers)",
+    "model": "gemini-3-flash-preview",
+    "ran_at": "2026-10-27T13:53:13+00:00"
+  }
+}

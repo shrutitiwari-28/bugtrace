@@ -1,0 +1,16 @@
+{
+  "B01": {
+    "id": "B01",
+    "split": "tuning",
+    "category": "empty input",
+    "status": "INCONCLUSIVE",
+    "stage": "ai",
+    "attempts": 1,
+    "first_attempt_verified": false,
+    "seconds": 235.2,
+    "message": "API call failed: Request timed out.",
+    "final_patch": null,
+    "model": "gemini-3-flash-preview",
+    "ran_at": "2026-10-27T13:10:53+00:00"
+  }
+}
