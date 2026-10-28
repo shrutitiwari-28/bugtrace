@@ -1,0 +1,16 @@
+{
+  "B01": {
+    "id": "B01",
+    "split": "tuning",
+    "category": "empty input",
+    "status": "VERIFIED",
+    "stage": "regression",
+    "attempts": 1,
+    "first_attempt_verified": true,
+    "seconds": 34.6,
+    "message": "Patch successfully verified across all stages.",
+    "final_patch": "def calculate_average(numbers):\n    if not numbers:\n        return None\n    return sum(numbers) / len(numbers)\n",
+    "model": "gemini-3.6-flash",
+    "ran_at": "2026-10-28T18:31:29+00:00"
+  }
+}

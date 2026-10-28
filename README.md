@@ -78,14 +78,15 @@ Verification is only as strong as the tests executed. The audit catches common t
 - The browser's earlier run showed INCONCLUSIVE at Baseline; after restarting the server, recheck the browser workflow before claiming full end-to-end verification.
 - Demo videos are deferred until final submission preparation.
 
-## Day 8 - Benchmark Evaluation (In Progress)
+## Day 8 - Benchmark Evaluation
 
 - Created and validated a benchmark dataset of 15 bugs: 10 tuning cases (B01-B10) and 5 held-out cases (B11-B15).
 - Offline benchmark-data tests passed: **4 passed**.
 - Full automated test suite passed: **42 passed**.
 - Froze and pushed the validated dataset at commit `bc2c42c663a3d31ea982a363e07e1fb5a26feab3`, tagged `benchmark-freeze`.
-- Initial tuning attempts for B01-B05 were all **INCONCLUSIVE** because of AI-provider connection, availability, or quota errors. These are not counted as successful or failed repairs.
-- The held-out evaluation has **not yet been completed**. No benchmark accuracy claim is made.
-- Results are recorded in `benchmark/results/RESULTS.md`; tuning data is saved in `benchmark/results/tuning.json`.
+- Evaluated all 10 tuning cases and all 5 held-out cases using `gemini-3.6-flash`.
+- **Tuning results:** 10/10 bugs verified, all on the first attempt.
+- **Held-out results:** 5/5 bugs verified, all on the first attempt.
+- All 15 successful runs reached the regression stage. Results are recorded in `benchmark/results/RESULTS.md`.
+- Older benchmark result files are preserved in `benchmark/results/archive/` and excluded from the current report.
 - Limitations: the benchmark contains only 15 small bugs. Passing approved tests does not prove correctness for all inputs, and these results should not be treated as a general measure of real-world bug-fixing accuracy.
-

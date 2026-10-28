@@ -1,0 +1,72 @@
+{
+  "B11": {
+    "id": "B11",
+    "split": "heldout",
+    "category": "duplicates",
+    "status": "VERIFIED",
+    "stage": "regression",
+    "attempts": 1,
+    "first_attempt_verified": true,
+    "seconds": 17.7,
+    "message": "Patch successfully verified across all stages.",
+    "final_patch": "def unique(items):\n    return list(dict.fromkeys(items))\n",
+    "model": "gemini-3.6-flash",
+    "ran_at": "2026-10-28T18:40:03+00:00"
+  },
+  "B12": {
+    "id": "B12",
+    "split": "heldout",
+    "category": "shared default argument",
+    "status": "VERIFIED",
+    "stage": "regression",
+    "attempts": 1,
+    "first_attempt_verified": true,
+    "seconds": 14.0,
+    "message": "Patch successfully verified across all stages.",
+    "final_patch": "def add_item(item, items=None):\n    if items is None:\n        items = []\n    items.append(item)\n    return items",
+    "model": "gemini-3.6-flash",
+    "ran_at": "2026-10-28T18:40:20+00:00"
+  },
+  "B13": {
+    "id": "B13",
+    "split": "heldout",
+    "category": "whitespace handling",
+    "status": "VERIFIED",
+    "stage": "regression",
+    "attempts": 1,
+    "first_attempt_verified": true,
+    "seconds": 12.5,
+    "message": "Patch successfully verified across all stages.",
+    "final_patch": "def word_count(text):\n    return len(text.split())\n",
+    "model": "gemini-3.6-flash",
+    "ran_at": "2026-10-28T18:40:35+00:00"
+  },
+  "B14": {
+    "id": "B14",
+    "split": "heldout",
+    "category": "wrong sort order",
+    "status": "VERIFIED",
+    "stage": "regression",
+    "attempts": 1,
+    "first_attempt_verified": true,
+    "seconds": 14.0,
+    "message": "Patch successfully verified across all stages.",
+    "final_patch": "def top_scores(scores, n):\n    return sorted(scores, reverse=True)[:n]\n",
+    "model": "gemini-3.6-flash",
+    "ran_at": "2026-10-28T18:40:52+00:00"
+  },
+  "B15": {
+    "id": "B15",
+    "split": "heldout",
+    "category": "wrong formula",
+    "status": "VERIFIED",
+    "stage": "regression",
+    "attempts": 1,
+    "first_attempt_verified": true,
+    "seconds": 17.4,
+    "message": "Patch successfully verified across all stages.",
+    "final_patch": "def apply_discount(price, percent):\n    return price - price * percent / 100\n",
+    "model": "gemini-3.6-flash",
+    "ran_at": "2026-10-28T18:41:13+00:00"
+  }
+}
