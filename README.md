@@ -1,4 +1,4 @@
-# BugTrace
+﻿# BugTrace
 
 An AI-assisted bug-fix verifier that uses approved tests, sandboxed execution, and automated checks to evaluate proposed code fixes.
 
@@ -22,7 +22,7 @@ An AI-assisted bug-fix verifier that uses approved tests, sandboxed execution, a
 - Docker startup was restored during Day 6 troubleshooting.
 - `docker run --rm hello-world` succeeded after the Docker fix.
 - A small sandbox integration test passed.
-- The full automated test suite passed: **35 passed**.
+- The full automated test suite passed: **42 passed**.
 - Pipeline tests passed separately: **6 passed**.
 - These restrictions reduce risk but do not guarantee protection against every container escape or denial-of-service attack.
 
@@ -53,13 +53,13 @@ docker --context=default buildx build --load -t bugtrace-sandbox .
 
 ## Troubleshooting Evidence
 
-- `docs/screenshots/01-form.png` — bug submission form.
-- `docs/screenshots/02-review-test.png` — approved test review workflow.
-- `docs/screenshots/03-verified.png` — Verified result screen.
-- `docs/screenshots/04-failed.png` — Failed result screen from a local test scenario.
-- `docs/screenshots/04-inconclusive.png` — Inconclusive result screen.
-- `docs/screenshots/inconclusive-api-error.png` — an inconclusive AI API error; not evidence of a successful AI repair.
-- `docs/screenshots/verified-incorrect-fix.png` — the test checks only whether an empty list returns 0, so a patch that always returns 0 could pass while calculating normal averages incorrectly.
+- `docs/screenshots/01-form.png` â€” bug submission form.
+- `docs/screenshots/02-review-test.png` â€” approved test review workflow.
+- `docs/screenshots/03-verified.png` â€” Verified result screen.
+- `docs/screenshots/04-failed.png` â€” Failed result screen from a local test scenario.
+- `docs/screenshots/04-inconclusive.png` â€” Inconclusive result screen.
+- `docs/screenshots/inconclusive-api-error.png` â€” an inconclusive AI API error; not evidence of a successful AI repair.
+- `docs/screenshots/verified-incorrect-fix.png` â€” the test checks only whether an empty list returns 0, so a patch that always returns 0 could pass while calculating normal averages incorrectly.
 
 Verification is only as strong as the tests executed. The audit catches common test-gaming patterns but cannot guarantee that every possible incorrect fix will be detected.
 
