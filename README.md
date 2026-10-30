@@ -1,92 +1,144 @@
-﻿# BugTrace
+# BugTrace
 
-An AI-assisted bug-fix verifier that uses approved tests, sandboxed execution, and automated checks to evaluate proposed code fixes.
+**BugTrace checks AI-generated bug fixes before you trust them.**
 
-## Day 5 - Human Approval and Retry Loop
+An AI tool can suggest a fix, but a suggestion is not proof. BugTrace runs an approved test on your original code and on the fix, inside an isolated Docker container, and reports one of three results: `VERIFIED`, `FAILED` or `INCONCLUSIVE`.
 
-- Implemented the investigate, approve/edit/reject, repair, verify, retry, and report workflow.
-- The approved reproduction test remains frozen across repair attempts.
-- Maximum of three patch attempts; retries occur only after a definite FAILED result.
-- Stops on INCONCLUSIVE results, including AI/API errors and execution timeouts.
-- The repair loop and pipeline have automated test coverage.
-- A previous live Gemini conflict experiment (`gemini-3.6-flash`) exercised all three repair attempts.
-- Attempts were evaluated using regression tests and the suspicious-code audit.
-- The contradictory regression experiment ended in FAILED, as expected.
-- Do not interpret a FAILED result as a successful fix.
+**Demo video:** [[PASTE YOUTUBE LINK]]
 
-## Docker Sandbox
+| Review the test | Verified, with before and after | A sneaky fix rejected by the audit |
+|---|---|---|
+| ![Review](docs/screenshots/02-review-test.png) | ![Verified](docs/screenshots/live-ai-verified.png) | ![Audit](docs/screenshots/06-audit-rejected.png) |
 
-- Tests execute inside the `bugtrace-sandbox:latest` Docker image.
-- Container restrictions include disabled networking, a read-only root filesystem, dropped Linux capabilities, no-new-privileges, resource limits, and a temporary filesystem.
-- Test execution has a timeout; timeout and Docker execution errors return INCONCLUSIVE.
-- Docker startup was restored during Day 6 troubleshooting.
-- `docker run --rm hello-world` succeeded after the Docker fix.
-- A small sandbox integration test passed.
-- The full automated test suite passed: **42 passed**.
-- Pipeline tests passed separately: **6 passed**.
-- These restrictions reduce risk but do not guarantee protection against every container escape or denial-of-service attack.
+## The problem
 
-### Build the sandbox
+AI assistants write plausible fixes quickly. Checking them is still manual: does the fix really solve the bug, did it break something else, and did it only pass because it was written around the test? BugTrace turns those questions into an automatic check with a human in control of what "fixed" means.
 
-Build the sandbox image before running BugTrace tests:
+## How it works
+
+1. **Describe the bug.** Paste the code, the error and what it should do.
+2. **The AI proposes a test.** You read it, edit it if needed, and approve it. This test defines "fixed" and stays frozen from then on.
+3. **The AI proposes a fix** (up to three attempts, only retried after a definite `FAILED`).
+4. **BugTrace verifies it** in a Docker sandbox:
+   - *Baseline:* the approved test must fail on your original code.
+   - *Audit:* the fix is scanned for test-gaming tricks, such as inspecting the call stack.
+   - *Reproduction:* the approved test must pass on the fix.
+   - *Regression:* your existing tests must still pass.
+
+| Result | Meaning |
+|---|---|
+| `VERIFIED` | The approved test failed before, passes now, and existing tests still pass. |
+| `FAILED` | The fix did not pass every check. Your original code is not changed. |
+| `INCONCLUSIVE` | The check could not finish (timeout, Docker or AI error). Never treated as a pass or a fail. |
+
+The AI never decides the verdict. The sandbox does. See [docs/architecture.md](docs/architecture.md).
+
+## What makes it different
+
+- **A human approves the test.** The AI cannot grade its own work against a test it wrote and you never saw.
+- **Test-gaming is checked.** In a live run, the model tried to detect which test was running by reading the call stack. The audit rejected it. Another attempt used a hidden call counter and was caught by a regression test.
+- **A timeout is never a success.** If Docker or the AI provider fails, the answer is `INCONCLUSIVE`.
+- **Sandboxed execution.** Each run uses a fresh container with no network, a read-only root filesystem, dropped Linux capabilities, `no-new-privileges`, 256 MB memory, 1 CPU, a 64-process limit and a timeout.
+
+## Quick start
+
+You need Python 3.12 or newer (developed on 3.14) and Docker Desktop running.
 
 ```powershell
+git clone https://github.com/shrutitiwari-28/bugtrace.git
+cd bugtrace
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1          # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
 docker build -t bugtrace-sandbox .
+Copy-Item .env.example .env           # macOS/Linux: cp .env.example .env
 ```
 
-If needed, try:
+Edit `.env` with any OpenAI-compatible provider. Example for Google Gemini:
+
+```
+LLM_API_KEY=your_key_here
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+LLM_MODEL=your_model_name
+```
+
+Never commit `.env`. It is already in `.gitignore`.
 
 ```powershell
-docker --context=default buildx build --load -t bugtrace-sandbox .
+python -m uvicorn api:app --reload
 ```
 
-## Day 6 - Web Interface and End-to-End Verification
+Open http://127.0.0.1:8000. To try it without an AI key, choose **Check a correct fix (no AI)** from the example list, or tick *I already have a fix to check*.
 
-- Added a browser-based interface using HTML, CSS, and JavaScript.
-- Integrated the interface with FastAPI endpoints for investigation and repair.
-- Implemented the browser workflow for bug submission, diagnosis, test review, repair, and verification.
-- Captured workflow screenshots in `docs/screenshots/`, including form, test review, Verified, Failed, and Inconclusive results.
-- The Failed UI demonstration used a locally supplied test patch to avoid calling the AI provider.
-- Docker smoke testing and automated tests passed after the startup issue was fixed.
-- **Live AI-provider verification succeeded (22 Oct 2026).** The AI-generated fix was verified in Docker: baseline reproduced the bug (1 failed, 1 passed), reproduction tests passed (2 passed), and regression tests passed (1 passed).
-- A VERIFIED result means the approved tests passed in the sandbox. It does not prove correctness for every possible input.
+If the build command fails on Windows, try `docker --context=default buildx build --load -t bugtrace-sandbox .`.
 
-## Troubleshooting Evidence
+## Check a fix from any tool
 
-- `docs/screenshots/01-form.png` â€” bug submission form.
-- `docs/screenshots/02-review-test.png` â€” approved test review workflow.
-- `docs/screenshots/03-verified.png` â€” Verified result screen.
-- `docs/screenshots/04-failed.png` â€” Failed result screen from a local test scenario.
-- `docs/screenshots/04-inconclusive.png` â€” Inconclusive result screen.
-- `docs/screenshots/inconclusive-api-error.png` â€” an inconclusive AI API error; not evidence of a successful AI repair.
-- `docs/screenshots/verified-incorrect-fix.png` â€” the test checks only whether an empty list returns 0, so a patch that always returns 0 could pass while calculating normal averages incorrectly.
+`POST /verify` checks a fix you already have, with no AI involved:
 
-Verification is only as strong as the tests executed. The audit catches common test-gaming patterns but cannot guarantee that every possible incorrect fix will be detected.
+```python
+import httpx
 
-## Day 7 - User-Supplied Fix Verification and UI Improvements
+r = httpx.post("http://127.0.0.1:8000/verify", timeout=120, json={
+    "source": "def first_n(items, n):\n    return items[:n - 1]\n",
+    "patched_source": "def first_n(items, n):\n    return items[:n]\n",
+    "approved_test": "from calculator import first_n\n\ndef test_two():\n    assert first_n([1, 2, 3], 2) == [1, 2]\n",
+    "regression_tests": "",
+})
+print(r.json()["status"])
+```
 
-- Added the `/verify` API endpoint to verify a user-supplied patch without requiring AI-generated changes.
-- Added API tests for verification results and invalid approved tests.
-- Added UI support for supplying your own fix, with example correct, incorrect, and suspicious patches.
-- Added a Before/After panel to show baseline and reproduction results when available.
-- Added Docker failure handling so infrastructure errors and timeouts return INCONCLUSIVE rather than being reported as a verified fix or ordinary test failure.
-- Focused API and sandbox-status tests passed: **11 passed**.
-- JavaScript syntax check passed using `node --check web/app.js`.
-- `git diff --check` reports no whitespace errors; only Windows LF/CRLF conversion warnings remain.
-- Docker sandbox smoke test passed, and direct pipeline verification correctly rejected the suspicious patch at the Audit stage (`sys` import and `_getframe` introspection detected).
-- Captured the audit-rejection evidence in `docs/screenshots/06-audit-rejected.png`.
-- The browser's earlier run showed INCONCLUSIVE at Baseline; after restarting the server, recheck the browser workflow before claiming full end-to-end verification.
-- Demo videos are deferred until final submission preparation.
+Other endpoints: `GET /health`, `POST /investigate` (diagnosis and proposed test) and `POST /repair` (the full repair loop). Code is saved as `calculator.py` in the sandbox, so tests import from `calculator`.
 
-## Day 8 - Benchmark Evaluation
+## Benchmark
 
-- Created and validated a benchmark dataset of 15 bugs: 10 tuning cases (B01-B10) and 5 held-out cases (B11-B15).
-- Offline benchmark-data tests passed: **4 passed**.
-- Full automated test suite passed: **42 passed**.
-- Froze and pushed the validated dataset at commit `bc2c42c663a3d31ea982a363e07e1fb5a26feab3`, tagged `benchmark-freeze`.
-- Evaluated all 10 tuning cases and all 5 held-out cases using `gemini-3.6-flash`.
-- **Tuning results:** 10/10 bugs verified, all on the first attempt.
-- **Held-out results:** 5/5 bugs verified, all on the first attempt.
-- All 15 successful runs reached the regression stage. Results are recorded in `benchmark/results/RESULTS.md`.
-- Older benchmark result files are preserved in `benchmark/results/archive/` and excluded from the current report.
-- Limitations: the benchmark contains only 15 small bugs. Passing approved tests does not prove correctness for all inputs, and these results should not be treated as a general measure of real-world bug-fixing accuracy.
+15 small single-function Python bugs (empty input, off-by-one, wrong key, None handling, wrong condition, boundary error, and more). Each has a fixed approved test, regression tests and a reference fix used only to prove the bug is valid. The AI never sees the reference fix.
+
+- **Tuning set (B01 to B10):** [10]/10 verified.
+- **Held-out set (B11 to B15):** [5]/5 verified. The code was frozen at commit `bc2c42c` (tag `benchmark-freeze`) before this run.
+- **Model:** [Gemini 3.6 Flash]. Attempts: [15] of [15] verified on the first attempt.
+
+
+How to read this: the bugs are small and the approved tests were written by the project author, so this shows the pipeline works on simple cases. It is not an accuracy figure for real codebases, and the held-out bugs were visible to the author, who did not tune on them. Full results are in [benchmark/results](benchmark/results). Run `python benchmark/run_benchmark.py validate` to check the bugs yourself without any AI.
+
+## Limitations
+
+- `VERIFIED` means the approved tests passed. It does not prove the code is correct for every input.
+- The audit catches common test-gaming tricks, not all of them. A weak test can still accept a wrong fix.
+- Python only, and small single-file projects.
+- Docker reduces risk but does not guarantee protection against every possible attack. Do not expose this app to untrusted users on the public internet.
+- Free AI providers have daily limits and can time out. Those cases show as `INCONCLUSIVE`.
+
+## Tests
+
+```powershell
+python -m pytest -q
+```
+
+[[N]] tests. Several start Docker containers, so a full run takes a few minutes.
+
+## Project layout
+
+```
+api.py            FastAPI app and endpoints
+pipeline.py       baseline, audit, reproduction, regression
+repair_loop.py    up to 3 attempts with a frozen test
+ai_repair.py      AI calls and response validation
+audit.py          test-gaming checks
+sandbox.py        Docker runner
+web/              browser interface
+benchmark/        15 bugs, runner and results
+docs/             architecture and screenshots
+```
+
+## Impact and what's next
+
+Anyone who accepts AI-written fixes, from solo developers to teams reviewing pull requests, needs a cheap way to ask "does this really work?". Next steps: a pytest plugin and a CI check that run the same verification on a pull request, support for more languages, stronger checks against weak tests, and hosting with stronger isolation.
+
+## Progress log
+
+The day-by-day build notes are in [docs/progress-log.md](docs/progress-log.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
