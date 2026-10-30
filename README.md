@@ -115,7 +115,7 @@ How to read this: the bugs are small and the approved tests were written by the 
 python -m pytest -q
 ```
 
-[[N]] tests. Several start Docker containers, so a full run takes a few minutes.
+46 tests. Several start Docker containers, so a full run takes a few minutes.
 
 ## Project layout
 

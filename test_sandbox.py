@@ -1,29 +1,68 @@
-from sandbox import run_tests
+﻿import subprocess
+import sandbox
 
-# 1. Test Buggy Code (Should return FAILED)
-files_buggy = {
-    "calculator.py": "def calculate_average(numbers):\n    return sum(numbers) / len(numbers)",
-    "test_calculator.py": "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
-}
-print("BUGGY CODE RESULT:", run_tests(files_buggy))
 
-# 2. Test Fixed Code (Should return PASSED)
-files_fixed = {
-    "calculator.py": "def calculate_average(numbers):\n    if not numbers:\n        return 0\n    return sum(numbers) / len(numbers)",
-    "test_calculator.py": "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
-}
-print("FIXED CODE RESULT:", run_tests(files_fixed))
+class FakeResult:
+    def __init__(self, returncode=0, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
 
-# 3. Test Infinite Loop (Should return INCONCLUSIVE via timeout)
-files_infinite = {
-    "calculator.py": "def calculate_average(numbers):\n    while True: pass\n    return 0",
-    "test_calculator.py": "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
-}
-print("INFINITE LOOP RESULT:", run_tests(files_infinite, timeout=2))
 
-# 4. Test Syntax Error (Should return INCONCLUSIVE)
-files_syntax = {
-    "calculator.py": "def calculate_average(numbers)\n    return 0",
-    "test_calculator.py": "from calculator import calculate_average\ndef test_empty():\n    assert calculate_average([]) == 0"
-}
-print("SYNTAX ERROR RESULT:", run_tests(files_syntax))
+def mock_docker(monkeypatch, returncode, output):
+    def fake_run(cmd, **kwargs):
+        if cmd[:2] == ["docker", "run"]:
+            kwargs["stdout"].write(output)
+            return FakeResult(returncode)
+        return FakeResult()
+
+    monkeypatch.setattr(sandbox.subprocess, "run", fake_run)
+
+
+def test_buggy_code_returns_failed(monkeypatch):
+    mock_docker(monkeypatch, 1, "1 failed")
+
+    result = sandbox.run_tests({
+        "calculator.py": "def calculate_average(numbers): return sum(numbers) / len(numbers)",
+        "test_calculator.py": "def test_example(): assert False",
+    })
+
+    assert result["status"] == "FAILED"
+
+
+def test_fixed_code_returns_passed(monkeypatch):
+    mock_docker(monkeypatch, 0, "1 passed")
+
+    result = sandbox.run_tests({
+        "calculator.py": "def calculate_average(numbers): return 0 if not numbers else sum(numbers) / len(numbers)",
+        "test_calculator.py": "def test_example(): assert True",
+    })
+
+    assert result["status"] == "PASSED"
+
+
+def test_syntax_error_returns_inconclusive(monkeypatch):
+    mock_docker(monkeypatch, 2, "SyntaxError: invalid syntax")
+
+    result = sandbox.run_tests({
+        "calculator.py": "def broken(:",
+        "test_calculator.py": "def test_example(): pass",
+    })
+
+    assert result["status"] == "INCONCLUSIVE"
+
+
+def test_timeout_returns_inconclusive(monkeypatch):
+    def fake_run(cmd, **kwargs):
+        if cmd[:2] == ["docker", "run"]:
+            raise subprocess.TimeoutExpired(cmd, 2)
+        return FakeResult()
+
+    monkeypatch.setattr(sandbox.subprocess, "run", fake_run)
+
+    result = sandbox.run_tests({
+        "calculator.py": "def calculate_average(numbers): return 0",
+        "test_calculator.py": "def test_example(): pass",
+    }, timeout=2)
+
+    assert result["status"] == "INCONCLUSIVE"
