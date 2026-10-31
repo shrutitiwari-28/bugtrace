@@ -4,8 +4,6 @@
 
 An AI tool can suggest a fix, but a suggestion is not proof. BugTrace runs an approved test on your original code and on the fix, inside an isolated Docker container, and reports one of three results: `VERIFIED`, `FAILED` or `INCONCLUSIVE`.
 
-**Demo video:** [[PASTE YOUTUBE LINK]]
-
 | Review the test | Verified, with before and after | A sneaky fix rejected by the audit |
 |---|---|---|
 | ![Review](docs/screenshots/02-review-test.png) | ![Verified](docs/screenshots/live-ai-verified.png) | ![Audit](docs/screenshots/06-audit-rejected.png) |
